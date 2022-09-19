@@ -8,8 +8,6 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://u345760943_gpx_flask_proj:@Test_laravel3194@185.224.138.28/u345760943_gpx_flask_proj'
-
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -21,62 +19,72 @@ app.config['UPLOAD_FOLDER'] = 'C:/Users/DALOYA/PycharmProjects/gpxFlaskProjekt/u
 def index():  # put application's code here
     if request.method == 'POST':
 
-        input_file = request.files['file']
+        input_files = request.files.getlist('files[]')
 
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(input_file.filename))
+        if len(input_files) > 10:
+            print('MAX 10 DATEIEN')
+            return redirect('/')
 
-        infos = input_file.filename.split('_')
+        for input_file in input_files:
+            if input_file.filename[-4:] != '.gpx':
+                print('NUR GPX DATEIEN SIND ERLAUBT')
+                return redirect('/')
 
-        fahrer_vorname = infos[0]
-        fahrer_name = infos[0]
-        fahrzeug_polkz = infos[1]
-        dateiname_ohne_extension = input_file.filename[0:-4]
+        for input_file in input_files:
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(input_file.filename))
 
-        fahrer = Fahrer.query.filter_by(vorname=fahrer_vorname, name=fahrer_name).first()
-        if fahrer is None:
-            fahrer_to_save = Fahrer(vorname=fahrer_vorname, name=fahrer_name)
-            db.session.add(fahrer_to_save)
-            db.session.flush()
-            db.session.commit()
-            fahrer_id = fahrer_to_save.fid
-        else:
-            fahrer_id = fahrer.fid
+            infos = input_file.filename.split('_')
 
-        fahrzeug = Fahrzeug.query.filter_by(polkz=fahrzeug_polkz).first()
-        if fahrzeug is None:
-            fahrzeug_to_save = Fahrzeug(polkz=fahrzeug_polkz)
-            db.session.add(fahrzeug_to_save)
-            db.session.flush()
-            db.session.commit()
-            fahrzeug_id = fahrzeug_to_save.fzid
-        else:
-            fahrzeug_id = fahrzeug.fzid
+            fahrer_vorname = infos[0]
+            fahrer_name = infos[0]
+            fahrzeug_polkz = infos[1]
+            dateiname_ohne_extension = input_file.filename[0:-4]
 
-        fahrt = Fahrt.query.filter_by(dateiname=dateiname_ohne_extension).first()
-        if fahrt is None:
-            fahrt_to_save = Fahrt(dateiname=dateiname_ohne_extension, fid=fahrer_id, fzid=fahrzeug_id)
-            db.session.add(fahrt_to_save)
-            db.session.flush()
-            db.session.commit()
-            fahrt_id = fahrt_to_save.ftid
+            fahrer = Fahrer.query.filter_by(vorname=fahrer_vorname, name=fahrer_name).first()
+            if fahrer is None:
+                fahrer_to_save = Fahrer(vorname=fahrer_vorname, name=fahrer_name)
+                db.session.add(fahrer_to_save)
+                db.session.flush()
+                db.session.commit()
+                fahrer_id = fahrer_to_save.fid
+            else:
+                fahrer_id = fahrer.fid
 
-            input_file.save(file_path)
-            gpx_file = open(file_path, 'r')
+            fahrzeug = Fahrzeug.query.filter_by(polkz=fahrzeug_polkz).first()
+            if fahrzeug is None:
+                fahrzeug_to_save = Fahrzeug(polkz=fahrzeug_polkz)
+                db.session.add(fahrzeug_to_save)
+                db.session.flush()
+                db.session.commit()
+                fahrzeug_id = fahrzeug_to_save.fzid
+            else:
+                fahrzeug_id = fahrzeug.fzid
 
-            gpx = gpxpy.parse(gpx_file)
+            fahrt = Fahrt.query.filter_by(dateiname=dateiname_ohne_extension).first()
+            if fahrt is None:
+                fahrt_to_save = Fahrt(dateiname=dateiname_ohne_extension, fid=fahrer_id, fzid=fahrzeug_id)
+                db.session.add(fahrt_to_save)
+                db.session.flush()
+                db.session.commit()
+                fahrt_id = fahrt_to_save.ftid
 
-            for track in gpx.tracks:
-                for segment in track.segments:
-                    for point in segment.points:
-                        print('SAVING...')
-                        fahrtpunkt = Fahrtpunkt(lat=point.latitude, lon=point.longitude, ele=point.elevation,
-                                                zeitstempel=point.time, ftid=fahrt_id)
-                        db.session.add(fahrtpunkt)
-                        db.session.commit()
+                input_file.save(file_path)
+                gpx_file = open(file_path, 'r')
 
-            print('SUCCESS')
-        else:
-            print('ERROR')
+                gpx = gpxpy.parse(gpx_file)
+
+                for track in gpx.tracks:
+                    for segment in track.segments:
+                        for point in segment.points:
+                            print('UPLOADING...')
+                            fahrtpunkt = Fahrtpunkt(lat=point.latitude, lon=point.longitude, ele=point.elevation,
+                                                    zeitstempel=point.time, ftid=fahrt_id)
+                            db.session.add(fahrtpunkt)
+                            db.session.commit()
+
+                print('SUCCESS')
+            else:
+                print('ERROR')
 
         return redirect('/')
     else:
