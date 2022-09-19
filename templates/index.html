@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block title %}Home Page{% endblock %}
+{% block content %}
+
+    <div class="container">
+
+        <br>
+        <br>
+
+        <h1 class="text-center">GPX-Dateien importieren</h1>
+
+        <br>
+        <br>
+
+        <form action="" method="post" enctype="multipart/form-data">
+            <label for="file" class="form-label h3">GPX-Datei auswählen</label>
+            <input type="file" class="form-control" name="file" id="file" accept=".gpx" required>
+            <button type="submit" class="btn btn-primary mt-3">Submit</button>
+        </form>
+
+    </div>
+
+{% endblock %}
