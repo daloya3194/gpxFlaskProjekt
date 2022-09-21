@@ -94,7 +94,7 @@ def index():
                             db.session.commit()
 
                 print('SUCCESS')
-                flash('Die Datei <' + fahrt_to_save.dateiname + '.gpx> wurde erfolgreich importiert', 'success')
+                flash('Die Datei <' + fahrt_to_save.dateiname + '.gpx> wurde erfolgreich importiert | Fahrer: ' + fahrer_name + ' | Fahrzeug: ' + fahrzeug_polkz, 'success')
             else:
                 print('ERROR')
                 flash('Die Datei <' + fahrt.dateiname + '.gpx> wurde schon importiert', 'error')
