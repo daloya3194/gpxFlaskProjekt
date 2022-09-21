@@ -1,4 +1,5 @@
 import os
+import pathlib
 
 from flask import Flask, render_template, request, redirect
 from flask_sqlalchemy import SQLAlchemy, Model
@@ -6,13 +7,15 @@ import gpxpy
 import gpxpy.gpx
 from werkzeug.utils import secure_filename
 
+project_directory_path = str(pathlib.Path().resolve())
+
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(project_directory_path, 'database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-app.config['UPLOAD_FOLDER'] = 'C:/Users/DALOYA/PycharmProjects/gpxFlaskProjekt/uploads'
+app.config['UPLOAD_FOLDER'] = project_directory_path + os.path.sep + 'uploads'
 
 
 @app.route('/', methods=['GET', 'POST'])
