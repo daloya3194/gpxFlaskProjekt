@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+{% extends "base.html" %}
 {% block title %}GPX-Dateien Import{% endblock %}
 {% block content %}
 
@@ -16,7 +16,7 @@
             <label for="files" class="form-label h3">GPX-Datei auswählen</label>
             <small class="fw-bold">(Max 10 Dateien)</small>
             <input type="file" class="form-control" name="files[]" id="files" accept=".gpx" multiple required>
-            <button type="submit" class="btn btn-primary mt-3" onclick="set_loading()">Submit</button>
+            <button type="submit" class="btn btn-primary mt-3" onclick="set_loading()">Import</button>
         </form>
 
     </div>
