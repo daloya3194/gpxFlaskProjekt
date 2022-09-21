@@ -1,36 +1,44 @@
 import os
 import pathlib
 
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, flash
 from flask_sqlalchemy import SQLAlchemy, Model
 import gpxpy
 import gpxpy.gpx
 from werkzeug.utils import secure_filename
 
-project_directory_path = str(pathlib.Path().resolve())
+project_folder_path = str(pathlib.Path().resolve())
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'somme password that only you know'
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(project_directory_path, 'database.db')
+# MySQL
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://benutzername:passwort@hostname/datenbank_name'
+
+# SQLite
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(project_folder_path, 'database.db')
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-app.config['UPLOAD_FOLDER'] = project_directory_path + os.path.sep + 'uploads'
+app.config['UPLOAD_FOLDER'] = project_folder_path + os.path.sep + 'uploads'
 
 
 @app.route('/', methods=['GET', 'POST'])
-def index():  # put application's code here
+def index():
     if request.method == 'POST':
 
         input_files = request.files.getlist('files[]')
 
-        if len(input_files) > 10:
-            print('MAX 10 DATEIEN')
+        if input_files[0].filename == '' or len(input_files) > 10:
+            print('MIN 1 UND MAX 10 DATEIEN')
+            flash('Min 1 und Max 10 Dateien', 'error')
             return redirect('/')
 
         for input_file in input_files:
             if input_file.filename[-4:] != '.gpx':
                 print('NUR GPX DATEIEN SIND ERLAUBT')
+                flash('Nur GPX Dateien sind erlaubt', 'error')
                 return redirect('/')
 
         for input_file in input_files:
@@ -86,8 +94,10 @@ def index():  # put application's code here
                             db.session.commit()
 
                 print('SUCCESS')
+                flash('Die Datei <' + fahrt_to_save.dateiname + '.gpx> wurde erfolgreich importiert', 'success')
             else:
                 print('ERROR')
+                flash('Die Datei <' + fahrt.dateiname + '.gpx> wurde schon importiert', 'error')
 
         return redirect('/')
     else:
