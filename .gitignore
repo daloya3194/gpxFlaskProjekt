@@ -16,4 +16,4 @@ yarn-error.log
 /__pycache__
 /venv
 /.vs
-.gpx
+/uploads/*.gpx
