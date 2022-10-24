@@ -1,7 +1,9 @@
 import os
 import pathlib
 
-from flask import Flask, render_template, request, redirect, flash
+import folium
+import pandas as pd
+from flask import Flask, render_template, request, redirect, flash, url_for
 from flask_sqlalchemy import SQLAlchemy, Model
 import gpxpy
 import gpxpy.gpx
@@ -14,9 +16,10 @@ app.config['SECRET_KEY'] = 'somme password that only you know'
 
 # MySQL
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://benutzername:passwort@hostname/datenbank_name'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/flask_db'
 
 # SQLite
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(project_folder_path, 'database.db')
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(project_folder_path, 'database.db')
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -24,8 +27,51 @@ db = SQLAlchemy(app)
 app.config['UPLOAD_FOLDER'] = project_folder_path + os.path.sep + 'uploads'
 
 
+def process_gpx_to_df(file_name):
+    gpx = gpxpy.parse(open(file_name, 'r'))
+
+    # (1)make DataFrame
+    track = gpx.tracks[0]
+    segment = track.segments[0]
+    # Load the data into a Pandas dataframe (by way of a list)
+    data = []
+    segment_length = segment.length_3d()
+    for point_idx, point in enumerate(segment.points):
+        data.append([point.longitude, point.latitude, point.elevation,
+                     point.time, segment.get_speed(point_idx)])
+    columns = ["Longitude", "Latitude", "Altitude", "Time", "Speed"]
+    # columns = ['Longitude', Latitude, Altitude, Time, Speed]
+    gpx_df = pd.DataFrame(data, columns=columns)
+
+    # 2(make points tuple for line)
+    points = []
+    for track in gpx.tracks:
+        for segment in track.segments:
+            for point in segment.points:
+                points.append(tuple([point.latitude, point.longitude]))
+
+    return gpx_df, points
+
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    if request.method == 'POST':
+        print("Method POST")
+    else:
+        # gpx_file = open("C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WIT-AA000_001.gpx", 'r')
+
+        df = process_gpx_to_df(r"C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WITAA333_001.gpx")
+        # print(df[1])
+        mymap = folium.Map(location=[df[0].Latitude.mean(), df[0].Longitude.mean()], zoom_start=17, tiles=None)
+        folium.TileLayer('openstreetmap', name='OpenStreet Map').add_to(mymap)
+        folium.PolyLine(df[1], color='red', weight=4.5, opacity=.5).add_to(mymap)
+
+        # return render_template('index.html', map="")
+        return render_template('index.html', map=mymap._repr_html_())
+
+
+@app.route('/tracks-import', methods=['GET', 'POST'])
+def tracks_import():
     if request.method == 'POST':
 
         input_files = request.files.getlist('files[]')
@@ -94,14 +140,16 @@ def index():
                             db.session.commit()
 
                 print('SUCCESS')
-                flash('Die Datei <' + fahrt_to_save.dateiname + '.gpx> wurde erfolgreich importiert | Fahrer: ' + fahrer_name + ' | Fahrzeug: ' + fahrzeug_polkz, 'success')
+                flash(
+                    'Die Datei <' + fahrt_to_save.dateiname + '.gpx> wurde erfolgreich importiert | Fahrer: ' + fahrer_name + ' | Fahrzeug: ' + fahrzeug_polkz,
+                    'success')
             else:
                 print('ERROR')
                 flash('Die Datei <' + fahrt.dateiname + '.gpx> wurde schon importiert', 'error')
 
-        return redirect('/')
+        return redirect(url_for("tracks_import"))
     else:
-        return render_template('index.html')
+        return render_template('tracks-import.html')
 
 
 if __name__ == '__main__':

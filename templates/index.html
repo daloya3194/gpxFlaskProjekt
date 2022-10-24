@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}GPX-Dateien Import{% endblock %}
+{% block title %}Index{% endblock %}
 {% block content %}
 
     <div class="container">
@@ -7,17 +7,17 @@
         <br>
         <br>
 
-        <h1 class="text-center">GPX-Dateien importieren</h1>
+        <h1 class="text-center">Index</h1>
 
         <br>
         <br>
 
-        <form action="" method="post" enctype="multipart/form-data">
-            <label for="files" class="form-label h3">GPX-Datei auswählen</label>
-            <small class="fw-bold">(Max 10 Dateien)</small>
-            <input type="file" class="form-control" name="files[]" id="files" accept=".gpx" multiple required>
-            <button type="submit" class="btn btn-primary mt-3" onclick="set_loading()">Import</button>
-        </form>
+{#        <a href="{{url_for("tracks_import")}}">Track Import</a>#}
+        <div class="h-75, w-75 mx-auto">
+            {% autoescape off %}
+                {{ map }}
+            {% endautoescape %}
+        </div>
 
     </div>
 
