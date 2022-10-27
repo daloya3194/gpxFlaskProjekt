@@ -60,9 +60,14 @@ def index():
     else:
         # gpx_file = open("C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WIT-AA000_001.gpx", 'r')
 
-        df = process_gpx_to_df(r"C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WITAA333_001.gpx")
+        df = process_gpx_to_df(r"C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WIT-AA000_001.gpx")
+        # df = process_gpx_to_df(r"C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WITAA333_001.gpx")
+        # df = process_gpx_to_df(r"C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WITAA333_002.gpx")
+        # df = process_gpx_to_df(r"C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WITAA333_003.gpx")
         # print(df[1])
-        mymap = folium.Map(location=[df[0].Latitude.mean(), df[0].Longitude.mean()], zoom_start=17, tiles=None)
+        # mymap = folium.Map(location=[df[0].Latitude.mean(), df[0].Longitude.mean()], zoom_start=17, tiles=None)
+        mymap = folium.Map(location=[df[0].Latitude.mean(), df[0].Longitude.mean()], tiles=None)
+        mymap.fit_bounds(df[1])
         folium.TileLayer('openstreetmap', name='OpenStreet Map').add_to(mymap)
         folium.PolyLine(df[1], color='red', weight=4.5, opacity=.5).add_to(mymap)
 
