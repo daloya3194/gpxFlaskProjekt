@@ -8,6 +8,9 @@ from flask_sqlalchemy import SQLAlchemy, Model
 import gpxpy
 import gpxpy.gpx
 from werkzeug.utils import secure_filename
+from folium.plugins import BeautifyIcon
+from pprint import pprint
+
 
 project_folder_path = str(pathlib.Path().resolve())
 
@@ -27,52 +30,88 @@ db = SQLAlchemy(app)
 app.config['UPLOAD_FOLDER'] = project_folder_path + os.path.sep + 'uploads'
 
 
-def process_gpx_to_df(file_name):
-    gpx = gpxpy.parse(open(file_name, 'r'))
+# def process_gpx_to_df(file_name):
+#     gpx = gpxpy.parse(open(file_name, 'r'))
+#
+#     # (1)make DataFrame
+#     track = gpx.tracks[0]
+#     segment = track.segments[0]
+#
+#     # Load the data into a Pandas dataframe (by way of a list)
+#     data = []
+#     segment_length = segment.length_3d()
+#     for point_idx, point in enumerate(segment.points):
+#         pprint(segment.get_speed(point_idx))
+#         data.append([point.longitude, point.latitude, point.elevation,
+#                      point.time, segment.get_speed(point_idx)])
+#
+#     # pprint(data)
+#     columns = ["Longitude", "Latitude", "Altitude", "Time", "Speed"]
+#     gpx_df = pd.DataFrame(data, columns=columns)
+#
+#     # 2(make points tuple for line)
+#     points = []
+#     for track in gpx.tracks:
+#         for segment in track.segments:
+#             for point in segment.points:
+#                 points.append(tuple([point.latitude, point.longitude]))
+#
+#     return gpx_df, points
 
-    # (1)make DataFrame
-    track = gpx.tracks[0]
-    segment = track.segments[0]
+
+def process_points_to_df(database_points):
+
     # Load the data into a Pandas dataframe (by way of a list)
     data = []
-    segment_length = segment.length_3d()
-    for point_idx, point in enumerate(segment.points):
-        data.append([point.longitude, point.latitude, point.elevation,
-                     point.time, segment.get_speed(point_idx)])
-    columns = ["Longitude", "Latitude", "Altitude", "Time", "Speed"]
-    # columns = ['Longitude', Latitude, Altitude, Time, Speed]
-    gpx_df = pd.DataFrame(data, columns=columns)
-
-    # 2(make points tuple for line)
     points = []
-    for track in gpx.tracks:
-        for segment in track.segments:
-            for point in segment.points:
-                points.append(tuple([point.latitude, point.longitude]))
+
+    for point in database_points:
+        data.append([point.lon, point.lat, point.ele,
+                     point.zeitstempel])
+        points.append(tuple([point.lat, point.lon]))
+
+    columns = ["Longitude", "Latitude", "Altitude", "Time"]
+    gpx_df = pd.DataFrame(data, columns=columns)
 
     return gpx_df, points
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def index():
-    if request.method == 'POST':
-        print("Method POST")
-    else:
-        # gpx_file = open("C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WIT-AA000_001.gpx", 'r')
+    fahrten = Fahrt.query.all()
 
-        df = process_gpx_to_df(r"C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WIT-AA000_001.gpx")
-        # df = process_gpx_to_df(r"C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WITAA333_001.gpx")
-        # df = process_gpx_to_df(r"C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WITAA333_002.gpx")
-        # df = process_gpx_to_df(r"C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WITAA333_003.gpx")
-        # print(df[1])
-        # mymap = folium.Map(location=[df[0].Latitude.mean(), df[0].Longitude.mean()], zoom_start=17, tiles=None)
-        mymap = folium.Map(location=[df[0].Latitude.mean(), df[0].Longitude.mean()], tiles=None)
-        mymap.fit_bounds(df[1])
-        folium.TileLayer('openstreetmap', name='OpenStreet Map').add_to(mymap)
-        folium.PolyLine(df[1], color='red', weight=4.5, opacity=.5).add_to(mymap)
+    # df = process_gpx_to_df(r"C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WIT-AA000_001.gpx")
+    # mymap = folium.Map(location=[df[0].Latitude.mean(), df[0].Longitude.mean()], tiles=None)
+    # mymap.fit_bounds(df[1])
+    # folium.TileLayer('openstreetmap', name='OpenStreet Map').add_to(mymap)
+    # folium.PolyLine(df[1], color='red', weight=4.5, opacity=.5).add_to(mymap)
 
-        # return render_template('index.html', map="")
-        return render_template('index.html', map=mymap._repr_html_())
+    return render_template('index.html', fahrten=fahrten)
+
+
+@app.route('/show-map/<int:id>')
+def show_map(id):
+    fahrt = Fahrt.query.get(id)
+    fahrtpunkte = Fahrtpunkt.query.filter_by(ftid=id).all()
+
+    df = process_points_to_df(fahrtpunkte)
+    mymap = folium.Map(location=[df[0].Latitude.mean(), df[0].Longitude.mean()], tiles=None)
+    mymap.fit_bounds(df[1])
+    folium.TileLayer('openstreetmap', name='OpenStreet Map').add_to(mymap)
+    folium.PolyLine(df[1], color='red', weight=4.5, opacity=.5).add_to(mymap)
+
+    # circle marker
+    icon_circle = BeautifyIcon(
+        icon_shape='circle-dot',
+        border_color='green',
+        border_width=10,
+    )
+
+    folium.Marker(df[1][0], tooltip='Departure', icon=icon_circle).add_to(mymap)
+
+    folium.Marker(df[1][-1:][0], tooltip='Destination').add_to(mymap)
+
+    return render_template('map-view.html', map=mymap._repr_html_(), fahrt=fahrt)
 
 
 @app.route('/tracks-import', methods=['GET', 'POST'])

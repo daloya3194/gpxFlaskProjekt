@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Map View{% endblock %}
+{% block content %}
+
+    <div class="container">
+
+        <br>
+        <br>
+
+        <h1 class="text-center">{{ fahrt.dateiname  }}</h1>
+
+        <br>
+        <br>
+
+        <div class="mx-auto" style="max-width: 1100px">
+            {% autoescape off %}
+                {{ map }}
+            {% endautoescape %}
+        </div>
+
+    </div>
+
+{% endblock %}

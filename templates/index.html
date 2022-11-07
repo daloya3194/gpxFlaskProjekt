@@ -7,17 +7,34 @@
         <br>
         <br>
 
-        <h1 class="text-center">Index</h1>
+        <h1 class="text-center">Alle Fahrten</h1>
 
         <br>
         <br>
 
-{#        <a href="{{url_for("tracks_import")}}">Track Import</a>#}
-        <div class="h-75, w-75 mx-auto">
-            {% autoescape off %}
-                {{ map }}
-            {% endautoescape %}
+        <div>
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Fahrtname</th>
+                        <th scope="col">Last</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fahrt in fahrten %}
+                        <tr>
+                            <th scope="row">{{ fahrt.ftid }}</th>
+                            <td>{{ fahrt.dateiname }}</td>
+                            <td> <a href="{{ url_for("show_map", id=fahrt.ftid) }}" class="btn btn-outline-dark">Show Map</a> </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+
+        <br>
+        <br>
 
     </div>
 
