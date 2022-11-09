@@ -7,6 +7,7 @@ from flask import Flask, render_template, request, redirect, flash, url_for
 from flask_sqlalchemy import SQLAlchemy, Model
 import gpxpy
 import gpxpy.gpx
+from sqlalchemy import text
 from werkzeug.utils import secure_filename
 from folium.plugins import BeautifyIcon
 from pprint import pprint
@@ -78,7 +79,9 @@ def process_points_to_df(database_points):
 
 @app.route('/')
 def index():
-    fahrten = Fahrt.query.all()
+    # fahrten = Fahrt.query.all()
+
+    fahrten = db.session.execute('SELECT ft.ftid AS ftid, ft.dateiname AS dateiname, f.name AS fname FROM fahrt ft JOIN fahrer f ON ft.fid = f.fid')
 
     # df = process_gpx_to_df(r"C:\Users\DALOYA\PycharmProjects\gpxFlaskProjekt\uploads\AA_WIT-AA000_001.gpx")
     # mymap = folium.Map(location=[df[0].Latitude.mean(), df[0].Longitude.mean()], tiles=None)
@@ -92,7 +95,16 @@ def index():
 @app.route('/show-map/<int:id>')
 def show_map(id):
     fahrt = Fahrt.query.get(id)
+
+    if fahrt is None:
+        flash('Die Fahrt wurde nicht gefunden', 'error')
+        return redirect('/')
+
     fahrtpunkte = Fahrtpunkt.query.filter_by(ftid=id).all()
+
+    if not fahrtpunkte:
+        flash('Die Fahrt hat keine Fahrtpunkte', 'error')
+        return redirect('/')
 
     df = process_points_to_df(fahrtpunkte)
     mymap = folium.Map(location=[df[0].Latitude.mean(), df[0].Longitude.mean()], tiles=None)
@@ -177,13 +189,24 @@ def tracks_import():
                 for track in gpx.tracks:
                     for segment in track.segments:
                         for point in segment.points:
-                            print('UPLOADING...')
                             fahrtpunkt = Fahrtpunkt(lat=point.latitude, lon=point.longitude, ele=point.elevation,
                                                     zeitstempel=point.time, ftid=fahrt_id)
                             db.session.add(fahrtpunkt)
                             db.session.commit()
 
-                print('SUCCESS')
+                for waypoint in gpx.waypoints:
+                    fahrtpunkt = Fahrtpunkt(lat=waypoint.latitude, lon=waypoint.longitude, ele=waypoint.elevation,
+                                            zeitstempel=waypoint.time, ftid=fahrt_id)
+                    db.session.add(fahrtpunkt)
+                    db.session.commit()
+
+                for route in gpx.routes:
+                    for point in route.points:
+                        fahrtpunkt = Fahrtpunkt(lat=point.latitude, lon=point.longitude, ele=point.elevation,
+                                                zeitstempel=point.time, ftid=fahrt_id)
+                        db.session.add(fahrtpunkt)
+                        db.session.commit()
+
                 flash(
                     'Die Datei <' + fahrt_to_save.dateiname + '.gpx> wurde erfolgreich importiert | Fahrer: ' + fahrer_name + ' | Fahrzeug: ' + fahrzeug_polkz,
                     'success')
