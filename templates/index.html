@@ -18,7 +18,7 @@
                     <tr>
                         <th scope="col">Fahrt(ID)</th>
                         <th scope="col">Fahrt(Dateiname)</th>
-                        <th scope="col">Fahrer(Name)</th>
+                        <th scope="col" class="d-none d-md-table-cell">Fahrer(Name)</th>
                         <th scope="col">#</th>
                     </tr>
                 </thead>
@@ -27,7 +27,7 @@
                         <tr>
                             <th scope="row">{{ fahrt.ftid }}</th>
                             <td>{{ fahrt.dateiname }}</td>
-                            <td>{{ fahrt.fname }}</td>
+                            <td class="d-none d-md-table-cell">{{ fahrt.fname }}</td>
                             <td> <a href="{{ url_for("show_map", id=fahrt.ftid) }}" class="btn btn-outline-dark">Show Map</a> </td>
                         </tr>
                     {% endfor %}
